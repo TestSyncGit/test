@@ -1,6 +1,8 @@
 
-# Created by https://www.gitignore.io/api/python,django,pycharm
+/uploads
 
+# Created by https://www.gitignore.io/api/python,django,pycharm
+staticfiles
 ### Django ###
 *.log
 *.pot
@@ -159,6 +161,7 @@ celerybeat-schedule
 # Environments
 .env
 .venv
+.venv*
 env/
 venv/
 ENV/
@@ -179,3 +182,7 @@ venv.bak/
 .mypy_cache/
 
 # End of https://www.gitignore.io/api/python,django,pycharm
+
+node_modules
+static/client.js
+.idea
