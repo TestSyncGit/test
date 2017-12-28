@@ -1,7 +1,9 @@
 from django.core.mail import EmailMultiAlternatives
+from django.core.signing import TimestampSigner
 from django.template.loader import get_template
 
 from django.conf import settings
+from django.urls import reverse
 
 
 class InvitationEmail(EmailMultiAlternatives):
@@ -30,11 +32,11 @@ class InvitationEmail(EmailMultiAlternatives):
 
 
 class TicketsEmail(EmailMultiAlternatives):
-    def __init__(self, order, **kwargs):
+    def __init__(self, order, request=None, **kwargs):
         self.order = order
+        self.request = request
         super().__init__("Billets pour l'évènement {}".format(order.event.name), self.generate_text(), **kwargs)
         self.attach_alternative(self.generate_html(), 'text/html')
-        # self.attach_file()  ## TODO: add the attachment(s)
 
     def generate_text(self):
         return get_template('mail/tickets/text.txt').render(self.get_context())
@@ -43,6 +45,12 @@ class TicketsEmail(EmailMultiAlternatives):
         return get_template('mail/tickets/html.html').render(self.get_context())
 
     def get_context(self):
+        location = reverse('ticket-print', kwargs={'id': TimestampSigner().sign(self.order.id)})
+        if self.request:
+            link = self.request.build_absolute_uri(location)
+        else:
+            link = settings.BILLEVENT['API_URL'] + location
         return {
             'order': self.order,
+            'link': link
         }
