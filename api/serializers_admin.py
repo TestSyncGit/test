@@ -168,7 +168,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Order
-        fields = ('id', 'client', 'event', 'billets', 'coupon', 'status', 'amount', 'answers', 'transaction')
+        fields = ('id', 'client', 'event', 'billets', 'coupon', 'status', 'amount', 'answers', 'transaction', 'created_at')
         depth = 2
 
 
