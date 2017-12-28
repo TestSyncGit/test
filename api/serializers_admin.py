@@ -6,55 +6,39 @@ from api import models
 from api.models import Billet, Product, Option
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = User
-        fields = ('username', 'email')
-
-
-class GroupSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = Group
-        fields = ('url', 'name')
+        fields = ('url', 'username', 'email', 'groups')
 
 
 class PricingRuleSerializer(serializers.ModelSerializer):
     class Meta:
-        read_only = True
         model = models.PricingRule
         fields = ('id', 'type', 'value')
 
 
-class CouponSerializer(serializers.ModelSerializer):
-    class Meta:
-        read_only = True
-        model = models.Coupon
-        fields = ('id', 'percentage', 'amount', 'description')
-
-
 class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
-        read_only = True
         model = models.Question
         fields = ('id', 'question', 'help_text', 'data', 'question_type', 'required', 'target')
 
 
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
-        read_only = True
         model = models.Answer
         fields = ('id', 'participant', 'question', 'value', 'order', 'billet')
 
 
 class OptionSerializer(serializers.ModelSerializer):
-    rules = PricingRuleSerializer(many=True, read_only=True)
+    rules = PricingRuleSerializer(many=True)
 
     class Meta:
         model = models.Option
-        fields = ('id', 'name', 'type', 'description',
+        fields = ('id', 'name', 'type',
                   'price_ht', 'price_ttc',
                   'rules', 'seats', 'target',
-                  'event', 'how_many_left')
+                  'event')
 
 
 class ParticipantSerializer(serializers.ModelSerializer):
@@ -64,15 +48,15 @@ class ParticipantSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
-    rules = PricingRuleSerializer(many=True, read_only=True)
+    rules = PricingRuleSerializer(many=True)
     options = OptionSerializer(many=True, read_only=True)
-    questions = QuestionSerializer(many=True, read_only=True)
+    questions = QuestionSerializer(many=True)
 
     class Meta:
         model = models.Product
         fields = ('id', 'name',
                   'price_ht', 'price_ttc',
-                  'rules', 'options', 'seats', 'description',
+                  'rules', 'options', 'seats',
                   'questions', 'event', 'how_many_left', 'categorie')
 
 
@@ -103,12 +87,21 @@ class ClientSerializer(serializers.ModelSerializer):
 
 class InvitationSerializer(serializers.ModelSerializer):
     event = EventSerializer(read_only=True)
-    client = ClientSerializer(read_only=True)
+    event_id = serializers.PrimaryKeyRelatedField(
+        queryset=models.Event.objects.all(), source='event', write_only=True)
 
     class Meta:
         model = models.Invitation
-        fields = ('id', 'client', 'event', 'token', 'bought_seats', 'seats')
+        fields = ('id', 'first_name', 'last_name', 'email', 'event', 'event_id', 'token', 'seats', 'bought_seats')
         depth = 3
+
+    def create(self, validated_data):
+        invitation, created = models.Invitation.objects.get_or_create(email=validated_data['email'],
+                                                                      event=validated_data['event'],
+                                                                      defaults=validated_data)
+        if not created:
+            self.update(invitation, validated_data)
+        return invitation
 
 
 class BilletOptionSerializer(serializers.ModelSerializer):
@@ -120,46 +113,42 @@ class BilletOptionSerializer(serializers.ModelSerializer):
 
 
 class BilletOptionInputSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = models.BilletOption
         fields = ('id', 'option', 'participant', 'amount', 'billet')
 
 
-class BilletSerializer(serializers.ModelSerializer):
-    product = PrimaryKeyRelatedField(many=False, queryset=Product.objects.all())
-    options = PrimaryKeyRelatedField(many=True, read_only=True, required=False)
-    participants = ParticipantSerializer(many=True, required=False)
-    billet_options = BilletOptionSerializer(many=True, required=False)
+class SimpleOrderSerializer(serializers.ModelSerializer):
+    answers = AnswerSerializer(many=True)
+    client = ClientSerializer(read_only=True)
 
     class Meta:
-        model = models.Billet
-        fields = ('id', 'product', 'options', 'billet_options', 'participants')
+        model = models.Order
+        fields = ('id', 'client', 'status', 'answers')
         depth = 2
 
 
-class BilletForOrderSerializer(serializers.ModelSerializer):
+class BilletSerializer(serializers.ModelSerializer):
     product = ProductSerializer(many=False)
-    billet_options = BilletOptionSerializer(many=True, required=False)
-    options = PrimaryKeyRelatedField(many=True, read_only=True, required=False)
-    participants = ParticipantSerializer(many=True, required=False)
+    participants = ParticipantSerializer(many=True)
+    billet_options = BilletOptionSerializer(many=True)
+    order = SimpleOrderSerializer(read_only=True)
 
     class Meta:
         model = models.Billet
-        fields = ('id', 'product', 'options', 'billet_options', 'participants')
+        fields = ('id', 'product', 'billet_options', 'participants', 'order')
         depth = 2
 
 
 class OrderSerializer(serializers.ModelSerializer):
     event = EventSerializer(read_only=True)
-    billets = BilletForOrderSerializer(many=True, read_only=True)
-    answers = AnswerSerializer(many=True, read_only=True)
+    billets = BilletSerializer(many=True)
+    answers = AnswerSerializer(many=True)
     client = ClientSerializer(read_only=True)
-    coupon = CouponSerializer(read_only=True)
 
     class Meta:
         model = models.Order
-        fields = ('id', 'client', 'event', 'billets', 'status', 'answers', 'coupon')
+        fields = ('id', 'client', 'event', 'billets', 'status', 'amount', 'answers')
         depth = 2
 
 
