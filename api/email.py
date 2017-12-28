@@ -27,3 +27,22 @@ class InvitationEmail(EmailMultiAlternatives):
             'invitation': self.invitation,
             'link': "{}/invitation/{}".format(settings.BILLEVENT['FRONTEND_URL'], self.invitation.token)
         }
+
+
+class TicketsEmail(EmailMultiAlternatives):
+    def __init__(self, order, **kwargs):
+        self.order = order
+        super().__init__("Billets pour l'évènement {}".format(order.event.name), self.generate_text(), **kwargs)
+        self.attach_alternative(self.generate_html(), 'text/html')
+        # self.attach_file()  ## TODO: add the attachment(s)
+
+    def generate_text(self):
+        return get_template('mail/tickets/text.txt').render(self.get_context())
+
+    def generate_html(self):
+        return get_template('mail/tickets/html.html').render(self.get_context())
+
+    def get_context(self):
+        return {
+            'order': self.order,
+        }

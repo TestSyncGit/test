@@ -1,0 +1,22 @@
+<p>Bonjour {{ order.client.first_name }},</p>
+<p>
+    Vous avez récemment acheté des billets pour l'évènement
+    « {{ order.event.name }} ».
+    Vous les trouverez en pièce jointe de ce message.
+</p>
+<p>
+    Vous aurez besoin de vos billets pour accéder à l'évènement
+    le jour J.
+    Nous vous conseillons de les imprimer.
+</p>
+
+<p> Pour toutes questions n'hésitez pas à contacter notre équipe à
+    l'adresse suivante: {{ order.event.organizer.email }}.
+</p>
+
+<p> Dans l'attente de vous retrouver,
+</p>
+
+<p>
+    L'équipe {{ order.event.name }}
+</p>
