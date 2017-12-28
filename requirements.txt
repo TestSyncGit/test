@@ -6,6 +6,7 @@ dj-database-url==0.4.2
 Django==1.11.6
 django-anymail==1.2
 django-cors-headers==2.1.0
+django-dotenv==1.4.2
 django-proxy==1.1.0
 django-rest-swagger==2.1.2
 django-seed==0.1.7

@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.translation import ugettext_lazy as _
 
-from api.email import InvitationEmail
+from api.email import InvitationEmail, TicketsEmail
 from mercanet.models import TransactionRequest, TransactionMercanet
 
 TARGETS = (
@@ -539,6 +539,10 @@ class Order(models.Model):
     def __str__(self):
         return "Commande #" + str(self.event.id) + "-" + str(self.id)
 
+    def send_tickets(self):
+        email = TicketsEmail(self, to=(self.client.email,))
+        email.send(True)
+
 
 @receiver(post_save, sender=TransactionMercanet)
 def update_order_on_card_transaction(instance, **kwargs):
@@ -547,6 +551,7 @@ def update_order_on_card_transaction(instance, **kwargs):
         request_status = instance.request.status
         if request_status == TransactionRequest.STATUSES['PAYED']:
             order.status = Order.STATUS_VALIDATED
+            order.send_tickets()
         elif request_status == TransactionRequest.STATUSES['REJECTED']:
             order.status = Order.STATUS_REJECTED
         order.save()
