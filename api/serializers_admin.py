@@ -132,7 +132,7 @@ class BilletSerializer(serializers.ModelSerializer):
     product = ProductSerializer(many=False)
     participants = ParticipantSerializer(many=True)
     billet_options = BilletOptionSerializer(many=True)
-    order = SimpleOrderSerializer(read_only=True)
+    order = PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = models.Billet
@@ -140,16 +140,48 @@ class BilletSerializer(serializers.ModelSerializer):
         depth = 2
 
 
+class TransactionSerializer(serializers.ModelSerializer):
+
+    mercanet = serializers.SlugRelatedField(slug_field='transactionReference', read_only=True)
+    card = serializers.SlugRelatedField(slug_field='maskedPan', read_only=True, source='mercanet')
+
+    class Meta:
+        model = models.TransactionRequest
+        fields = ('id', 'status', 'mercanet', 'card')
+
+
+class CouponSerializer(serializers.ModelSerializer):
+    event = PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = models.Coupon
+        fields = ('id', 'code', 'description', 'max_use', 'percentage', 'amount', 'event')
+
+
 class OrderSerializer(serializers.ModelSerializer):
-    event = EventSerializer(read_only=True)
+    event = PrimaryKeyRelatedField(read_only=True)
     billets = BilletSerializer(many=True)
     answers = AnswerSerializer(many=True)
     client = ClientSerializer(read_only=True)
+    transaction = TransactionSerializer(read_only=True)
+    coupon = CouponSerializer(read_only=True)
 
     class Meta:
         model = models.Order
-        fields = ('id', 'client', 'event', 'billets', 'status', 'amount', 'answers')
+        fields = ('id', 'client', 'event', 'billets', 'coupon', 'status', 'amount', 'answers', 'transaction')
         depth = 2
+
+
+class OrdersListSerializer(serializers.ModelSerializer):
+
+    client_name = serializers.SlugRelatedField(slug_field='name', read_only=True, source='client')
+    client_email = serializers.SlugRelatedField(slug_field='email', read_only=True, source='client')
+    client_id = serializers.SlugRelatedField(slug_field='id', read_only=True, source='client')
+
+    class Meta:
+        model = models.Order
+        fields = ('id', 'created_at', 'status', 'amount', 'client_name', 'client_email', 'client_id')
+        depth = 0
 
 
 class CategorieSerializer(serializers.ModelSerializer):

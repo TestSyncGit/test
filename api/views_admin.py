@@ -1,8 +1,11 @@
 # This file contains routes only allowed for a membership user
 # Permission must be ensure by link between an organization and a user
 # User and Organization is a One to Many relationship. A user can have only one organization.
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncDay
+from rest_framework.pagination import PageNumberPagination
+
+from .utils.serializers import CustomSerializerViewSet
 from rest_framework import viewsets
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.response import Response
@@ -122,28 +125,43 @@ class BilletsViewSet(viewsets.ReadOnlyModelViewSet):
         })
 
 
-class OrdersViewSet(viewsets.ReadOnlyModelViewSet):
+class OrdersSetPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+class OrdersViewSet(CustomSerializerViewSet, viewsets.ModelViewSet):
     serializer_class = serializers.OrderSerializer
+    custom_serializer_classes = {
+        'list': serializers.OrdersListSerializer
+    }
+    pagination_class = OrdersSetPagination
     permission_classes = [permissions.IsEventManager]
 
     def get_queryset(self):
         base = Order.objects.filter(
-            event__organizer__membership__user=self.request.user) | Billet.objects.filter(
+            event__organizer__membership__user=self.request.user) | Order.objects.filter(
             event__membership__user=self.request.user)
         if 'status' in self.request.GET:
             status = self.request.GET.get('status', '')
-            base = base.filter(id__in=Order.accountable_orders())
             if status == 'accountable':
-                pass
+                base = base.filter(id__in=Order.accountable_orders())
             elif status == 'validated':
-                base = base.filter(id_in=Order.objects.filter(status=Order.STATUS_VALIDATED))
-        if 'event' in self.request.GET:
-            event = self.request.GET.get('event', '')
-            event = self.allowed_events().get(id=event)
-            base = base.filter(event=event)
-        if 'products' in self.request.GET:
-            products = self.products_for_order()
-            base = base.filter(billets__product__in=products)
+                base = base.filter(status=Order.STATUS_VALIDATED)
+            elif status == 'any':
+                base = base
+        else:
+            if self.action == 'list':
+                base = base.filter(status=Order.STATUS_VALIDATED)
+        if 'search' in self.request.GET:
+            search = self.request.GET.get('search', '').split(' ')
+            for word in search:
+                base = base.filter(Q(client__first_name__icontains=word) |
+                                   Q(client__last_name__icontains=word) |
+                                   Q(client__email__icontains=word) |
+                                   Q(transaction__mercanet__transactionReference=word))
+        base = base.order_by('created_at').reverse()
         return base
 
     def products_for_order(self):

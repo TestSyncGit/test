@@ -403,6 +403,12 @@ class Client(models.Model):
         name += self.email + ")"
         return name
 
+    @property
+    def name(self):
+        name = self.last_name + " "
+        name += self.first_name
+        return name
+
 
 @receiver(pre_save, sender=Client)
 def before_save_client_map_user(instance, **kwargs):
