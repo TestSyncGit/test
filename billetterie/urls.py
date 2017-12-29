@@ -13,7 +13,9 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.conf.urls import url, include
+from django.conf.urls.static import static
 from django.contrib import admin
 from rest_framework_swagger.views import get_swagger_view
 
@@ -27,4 +29,4 @@ urlpatterns = [
     url(r'^tickets/', include('ticketgenerator.urls')),
     url(r'^pay/', include('mercanet.urls')),
     url(r'^', include('frontend.urls')) #il faut que ce soit la dernière ligne !!!
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
