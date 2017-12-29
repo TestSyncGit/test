@@ -36,6 +36,7 @@ class OrderForAnswerSerializer(serializers.ModelSerializer):
 class AnswerSerializer(serializers.ModelSerializer):
     billet = serializers.SlugRelatedField(slug_field='id', read_only=True)
     order = OrderForAnswerSerializer(read_only=True)
+    participant = ParticipantForAnswerSerializer(read_only=True)
 
     class Meta:
         model = models.Answer
