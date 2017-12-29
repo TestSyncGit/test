@@ -17,10 +17,10 @@ from rest_framework_jwt.settings import api_settings
 
 from api import permissions
 from api.models import Event, Order, Option, Product, Billet, Categorie, Invitation, Client, BilletOption, Coupon
-from api.serializers import BilletSerializer, CategorieSerializer, InvitationSerializer, ParticipantSerializer, \
+from api.serializers.public import BilletSerializer, CategorieSerializer, InvitationSerializer, ParticipantSerializer, \
     AnswerSerializer, BilletOptionSerializer, BilletOptionInputSerializer, UserSerializer
 from mercanet.models import TransactionRequest
-from .serializers import EventSerializer, OrderSerializer, OptionSerializer, \
+from api.serializers.public import EventSerializer, OrderSerializer, OptionSerializer, \
     ProductSerializer
 from django import urls
 

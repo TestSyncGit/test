@@ -4,12 +4,19 @@ from rest_framework.relations import PrimaryKeyRelatedField
 
 from api import models
 from api.models import Billet, Product, Option
+from api.serializers.admin.answers import AnswerSerializer
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = User
         fields = ('url', 'username', 'email', 'groups')
+
+
+class ClientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Client
+        fields = ('id', 'first_name', 'last_name', 'email', 'phone')
 
 
 class PricingRuleSerializer(serializers.ModelSerializer):
@@ -24,12 +31,6 @@ class QuestionSerializer(serializers.ModelSerializer):
         fields = ('id', 'question', 'help_text', 'data', 'question_type', 'required', 'target')
 
 
-class AnswerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Answer
-        fields = ('id', 'participant', 'question', 'value', 'order', 'billet')
-
-
 class OptionSerializer(serializers.ModelSerializer):
     rules = PricingRuleSerializer(many=True)
 
@@ -39,12 +40,6 @@ class OptionSerializer(serializers.ModelSerializer):
                   'price_ht', 'price_ttc',
                   'rules', 'seats', 'target',
                   'event')
-
-
-class ParticipantSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Participant
-        fields = ('id', 'first_name', 'last_name', 'phone', 'email', 'billet')
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -58,6 +53,15 @@ class ProductSerializer(serializers.ModelSerializer):
                   'price_ht', 'price_ttc',
                   'rules', 'options', 'seats',
                   'questions', 'event', 'how_many_left', 'categorie')
+
+
+
+
+
+class ParticipantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Participant
+        fields = ('id', 'first_name', 'last_name', 'phone', 'email', 'billet')
 
 
 class OrganizerSerializer(serializers.ModelSerializer):
@@ -77,12 +81,6 @@ class EventSerializer(serializers.ModelSerializer):
                   'website', 'place', 'address', 'organizer',
                   'logo_url')
         depth = 10
-
-
-class ClientSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Client
-        fields = ('id', 'first_name', 'last_name', 'email', 'phone')
 
 
 class InvitationSerializer(serializers.ModelSerializer):

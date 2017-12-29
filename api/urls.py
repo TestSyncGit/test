@@ -17,6 +17,8 @@ admin_router.register(r'organizers', admin.OrganizerViewSet, 'organizers')
 admin_router.register(r'invitations', admin.InvitationViewSet, 'invitations')
 admin_router.register(r'billets', admin.BilletsViewSet, 'billets-admin')
 admin_router.register(r'orders', admin.OrdersViewSet, 'orders-admin')
+admin_router.register(r'questions', admin.QuestionsViewSet, 'question-admin')
+admin_router.register(r'answers', admin.AnswersViewSet, 'answer-admin')
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.

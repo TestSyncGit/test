@@ -360,7 +360,7 @@ class Question(models.Model):
 
 class Answer(models.Model):
     order = models.ForeignKey('Order', related_name='answers')
-    question = models.ForeignKey(Question)
+    question = models.ForeignKey(Question, related_name='answers')
     participant = models.ForeignKey(Participant, null=True, blank=True)
     billet = models.ForeignKey(Billet, null=True, blank=True)
     value = models.TextField(blank=True, null=True)

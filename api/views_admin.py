@@ -10,8 +10,9 @@ from rest_framework import viewsets
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.response import Response
 
-from api import serializers_admin as serializers, permissions
-from api.models import Event, Organizer, Invitation, Billet, Order, Product
+from api import permissions
+from api.serializers import admin as serializers
+from api.models import Event, Organizer, Invitation, Billet, Order, Product, Question, Answer
 
 
 class EventViewSet(viewsets.ModelViewSet):
@@ -171,3 +172,39 @@ class OrdersViewSet(CustomSerializerViewSet, viewsets.ModelViewSet):
     def allowed_events(self):
         return (Event.objects.filter(organizer__membership__user=self.request.user) |
                 Event.objects.filter(membership__user=self.request.user))
+
+
+class QuestionsViewSet(CustomSerializerViewSet, viewsets.ModelViewSet):
+    serializer_class = serializers.QuestionSerializer
+    custom_serializer_classes = {
+        'list': serializers.QuestionSerializer
+    }
+    pagination_class = OrdersSetPagination
+    permission_classes = [permissions.IsEventManager]
+
+    def get_queryset(self):
+        base = Question.objects.filter(id__in=Question.objects.filter(
+            Q(option__event__organizer__membership__user=self.request.user) |
+            Q(product__event__organizer__membership__user=self.request.user) |
+            Q(option__event__membership__user=self.request.user) |
+            Q(product__event__membership__user=self.request.user)))
+        return base
+
+
+class AnswersViewSet(CustomSerializerViewSet, viewsets.ModelViewSet):
+    serializer_class = serializers.AnswerSerializer
+    custom_serializer_classes = {
+        'list': serializers.AnswerSerializer
+    }
+    permission_classes = [permissions.IsEventManager]
+
+    def get_queryset(self):
+        base = Answer.objects.filter(question__in=Question.objects.filter(
+            Q(option__event__organizer__membership__user=self.request.user) |
+            Q(product__event__organizer__membership__user=self.request.user) |
+            Q(option__event__membership__user=self.request.user) |
+            Q(product__event__membership__user=self.request.user)))
+        if 'question' in self.request.GET:
+            question = self.request.GET.get('question', '')
+            base = base.filter(question=question)
+        return base
