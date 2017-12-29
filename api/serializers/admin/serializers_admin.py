@@ -55,9 +55,6 @@ class ProductSerializer(serializers.ModelSerializer):
                   'questions', 'event', 'how_many_left', 'categorie')
 
 
-
-
-
 class ParticipantSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Participant

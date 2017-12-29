@@ -207,4 +207,15 @@ class AnswersViewSet(CustomSerializerViewSet, viewsets.ModelViewSet):
         if 'question' in self.request.GET:
             question = self.request.GET.get('question', '')
             base = base.filter(question=question)
+        if 'status' in self.request.GET:
+            status = self.request.GET.get('status', '')
+            if status == 'accountable':
+                base = base.filter(order__in=Order.accountable_orders())
+            elif status == 'validated':
+                base = base.filter(order__status=Order.STATUS_VALIDATED)
+            elif status == 'any':
+                base = base
+        else:
+            if self.action == 'list':
+                base = base.filter(order__status=Order.STATUS_VALIDATED)
         return base
