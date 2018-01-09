@@ -10,7 +10,6 @@ from . import models
                 models.Coupon,
                 models.Billet,
                 models.BilletOption,
-                models.Invitation,
                 models.PaymentMethod,
                 models.Question,
                 models.Response,
@@ -21,10 +20,23 @@ class BasicAdmin(admin.ModelAdmin):
     pass
 
 
+@admin.register(models.Billet)
+class BilletAdmin(admin.ModelAdmin):
+    search_fields = ['participant__first_name', 'participant__last_name', 'participant__email']
+    list_per_page = 20
+
+
+@admin.register(models.Invitation)
+class InvitationAdmin(admin.ModelAdmin):
+    search_fields = ['first_name', 'last_name', 'email']
+    list_per_page = 20
+
+
 @admin.register(models.Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ['id', 'event', 'client', 'status', 'mercanet', 'created_at', 'amount']
-    search_fields = ['client__first_name', 'client__last_name', 'client__email', 'transaction__mercanet__transactionReference']
+    search_fields = ['client__first_name', 'client__last_name', 'client__email',
+                     'transaction__mercanet__transactionReference']
     list_display_links = ['id']
     list_filter = ['event', 'status']
     list_per_page = 20
