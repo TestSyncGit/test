@@ -8,7 +8,6 @@ from . import models
                 models.PricingRule,
                 models.Product, models.Option,
                 models.Coupon,
-                models.Billet,
                 models.BilletOption,
                 models.PaymentMethod,
                 models.Question,
