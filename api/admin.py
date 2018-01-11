@@ -14,13 +14,27 @@ from . import models
                 models.PricingRule,
                 models.Product, models.Option,
                 models.Coupon,
-                models.BilletOption,
                 models.PaymentMethod,
                 models.Question,
                 models.Categorie,
                 models.Participant)
 class BasicAdmin(admin.ModelAdmin):
     pass
+
+
+@admin.register(models.BilletOption)
+class BilletOptionAdmin(admin.ModelAdmin):
+    list_display = ['id', 'participant', 'billet', 'option', 'amount']
+    search_fields = ['participant__first_name', 'participant__last_name',
+                     'billet__order__client__first_name', 'billet__order__client__last_name', 'billet__id', 'billet__order__id']
+    raw_id_fields = ("participant", 'billet', 'option')
+    fields = ("participant", 'billet', 'option', 'amount')
+    list_filter = ['billet__order__event__name', 'option__name']
+    list_per_page = 20
+
+    def get_queryset(self, request):
+        qs = super(BilletOptionAdmin, self).get_queryset(request)
+        return qs.filter(Q(billet__order__id=None) | Q(billet__order__status=models.Order.STATUS_VALIDATED))
 
 
 @admin.register(models.Answer)
