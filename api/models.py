@@ -241,6 +241,7 @@ class Billet(models.Model):
     product = models.ForeignKey(Product, null=True, blank=True, related_name='billets')
     options = models.ManyToManyField(Option, through=BilletOption, related_name='billets')
     order = models.ForeignKey('Order', null=True, related_name='billets')
+    canceled = models.BooleanField(default=False)
 
     @staticmethod
     def validated():
