@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.core.signing import TimestampSigner
+from django.db.models import Q
 from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
 
 from . import models
@@ -23,10 +25,17 @@ class BasicAdmin(admin.ModelAdmin):
 
 @admin.register(models.Answer)
 class AnswerAdmin(admin.ModelAdmin):
+    list_display = ['id', 'order', 'participant', 'billet', 'question']
     search_fields = ['participant__first_name', 'participant__last_name',
                      'order__client__first_name', 'order__client__last_name', 'billet__id', 'order__id']
     raw_id_fields = ("participant", "order", 'billet', 'question')
     fields = ("participant", "order", 'billet', 'question', 'value')
+    list_filter = ['order__event__name', 'question__question']
+    list_per_page = 20
+
+    def get_queryset(self, request):
+        qs = super(AnswerAdmin, self).get_queryset(request)
+        return qs.filter(Q(order__id=None) | Q(order__status=models.Order.STATUS_VALIDATED))
 
 
 @admin.register(models.Client)
@@ -35,10 +44,37 @@ class ClientAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
+class ParticipantInline(admin.StackedInline):
+    model = models.Participant
+
+    def get_max_num(self, request, obj=None, **kwargs):
+        if obj is None:
+            return None
+        if obj.product is None:
+            return 0
+        return obj.product.seats
+
+
+class BilletOptionInline(admin.StackedInline):
+    model = models.BilletOption
+    raw_id_fields = ("option", "participant")
+    extra = 0
+
+
 @admin.register(models.Billet)
 class BilletAdmin(admin.ModelAdmin):
+    list_display = ['id', 'order', 'participants', 'product']
     search_fields = ['participants__first_name', 'participants__last_name', 'participants__email']
+    raw_id_fields = ('order', 'product')
+    list_filter = ['order__event__name', 'order__status', 'product__name']
+    inlines = (BilletOptionInline, ParticipantInline)
     list_per_page = 20
+
+    def participants(self, billet):
+        p = []
+        for participant in billet.participants.all():
+            p.append(str(participant))
+        return ' # '.join(p)
 
 
 @admin.register(models.Invitation)
@@ -51,9 +87,31 @@ class BilletInline(admin.StackedInline):
     model = models.Billet
     extra = 0
 
+    def admin_link(self, instance):
+        url = reverse('admin:%s_%s_change' % (instance._meta.app_label,
+                                              instance._meta.module_name),
+                      args=(instance.id,))
+        return format_html(u'<a href="{}">Edit: {}</a>', url, instance.title)
+
+    def participants(self, billet):
+        p = []
+        for participant in billet.participants.all():
+            p.append(str(participant))
+        return ' # '.join(p)
+
+    def options_by(self, billet):
+        p = []
+        for o in billet.billet_options.all():
+            p.append('{} x{}'.format(str(o.option.name), o.amount))
+        return ' # '.join(p)
+    options_by.verbose_name = 'Options'
+
+    readonly_fields = ('participants', 'options_by')
+
 
 class AnswerInline(admin.StackedInline):
     model = models.Answer
+    raw_id_fields = ("participant", "order", 'billet', 'question')
     extra = 0
 
 
@@ -64,7 +122,7 @@ class OrderAdmin(admin.ModelAdmin):
                      'transaction__mercanet__transactionReference']
     list_display_links = ['id']
     list_select_related = ('client',)
-    list_filter = ['event', 'status']
+    list_filter = ['event__name', 'status']
     list_per_page = 20
 
     raw_id_fields = ("transaction", "client", 'coupon')
