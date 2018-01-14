@@ -14,12 +14,6 @@ class AmountBilletOptionSerializer(serializers.Serializer):
     billet_option_limit = serializers.IntegerField(allow_null=True)
 
 
-
-
-
-
-
-
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = User
