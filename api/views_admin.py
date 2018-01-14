@@ -7,12 +7,19 @@ from rest_framework.pagination import PageNumberPagination
 
 from .utils.serializers import CustomSerializerViewSet
 from rest_framework import viewsets
-from rest_framework.decorators import detail_route, list_route
+from rest_framework.decorators import detail_route, list_route, permission_classes, api_view
 from rest_framework.response import Response
 
 from api import permissions
 from api.serializers import admin as serializers
-from api.models import Event, Organizer, Invitation, Billet, Order, Product, Question, Answer
+from api.models import Event, Organizer, Invitation, Billet, Order, Product, Question, Answer, BilletOption
+
+
+@api_view(['get'])
+@permission_classes((permissions.IsEventManager,))
+def billet_option_count(request,id):
+
+    return Response(BilletOption.objects.filter(option=id, billet__order__status=7).aggregate(Sum('amount')))
 
 
 class EventViewSet(viewsets.ModelViewSet):
