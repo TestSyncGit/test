@@ -12,14 +12,29 @@ from rest_framework.response import Response
 
 from api import permissions
 from api.serializers import admin as serializers
-from api.models import Event, Organizer, Invitation, Billet, Order, Product, Question, Answer, BilletOption
+from api.models import Event, Organizer, Invitation, Billet, Order, Product, Question, Answer, BilletOption, Option, \
+    PricingRule
 
 
-@api_view(['get'])
-@permission_classes((permissions.IsEventManager,))
-def billet_option_count(request,id):
+class AmountBilletOptionViewSet(viewsets.ModelViewSet):
+    serializers_class = serializers.AmountBilletOptionSerializer
+    permission_classes = [permissions.IsEventManager]
 
-    return Response(BilletOption.objects.filter(option=id, billet__order__status=7).aggregate(Sum('amount')))
+    def retrieve(self, request,pk=None, *args, **kwargs):
+        if not Option.objects.filter(id=pk).exists():
+            return Response("ID NOT FOUND", status=404)
+        monobject = {
+            "name": Option.objects.get(id=pk).name,
+        "billet_option_vendues":  BilletOption.objects.filter(option=pk, billet__order__status=7).aggregate(
+            Sum('amount'))['amount__sum'] if BilletOption.objects.filter(option=pk, billet__order__status=7).aggregate(
+            Sum('amount'))['amount__sum'] else 0,
+        "billet_option_limit": Option.objects.get(id=pk).rules.get(type=PricingRule.TYPE_T).value if Option.objects.get(id=pk).rules.filter(type=PricingRule.TYPE_T).exists() else -1
+        }
+
+        serializer = serializers.AmountBilletOptionSerializer(data=monobject)
+        if serializer.is_valid():
+            return Response(serializer.data)
+        return Response("UNKNOWN ERROR")
 
 
 class EventViewSet(viewsets.ModelViewSet):

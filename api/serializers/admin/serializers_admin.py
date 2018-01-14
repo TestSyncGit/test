@@ -1,10 +1,23 @@
 from django.contrib.auth.models import User, Group
 from rest_framework import serializers
 from rest_framework.relations import PrimaryKeyRelatedField
+from django.db.models import Sum
 
 from api import models
 from api.models import Billet, Product, Option
 from api.serializers.admin.answers import AnswerSerializer
+
+
+class AmountBilletOptionSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    billet_option_vendues = serializers.IntegerField()
+    billet_option_limit = serializers.IntegerField(allow_null=True)
+
+
+
+
+
+
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):

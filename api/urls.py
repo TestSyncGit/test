@@ -19,11 +19,12 @@ admin_router.register(r'billets', admin.BilletsViewSet, 'billets-admin')
 admin_router.register(r'orders', admin.OrdersViewSet, 'orders-admin')
 admin_router.register(r'questions', admin.QuestionsViewSet, 'question-admin')
 admin_router.register(r'answers', admin.AnswersViewSet, 'answer-admin')
+admin_router.register(r'amountoption', admin.AmountBilletOptionViewSet,'amount-option')
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
-    url(r'^admin/option/(?P<id>[\d+])/$', admin.billet_option_count),
+
     url(r'^authenticate/invitation$', views.InvitationAuthentication.as_view()),
     url(r'^authenticate$', obtain_jwt_token),
     url(r'^authenticate/refresh$', refresh_jwt_token),
