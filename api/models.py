@@ -123,6 +123,11 @@ class Pricing(models.Model):
     questions = models.ManyToManyField("Question", blank=True)
     event = models.ForeignKey(Event, verbose_name=_('Evènement'))
     description = models.TextField(verbose_name=_('Description'), blank=True, null=True)
+    selling_mode = models.CharField(max_length=1, choices=(
+        ('P', _('Public (en fonction de l\'évènement)')),
+        ('I', _('Sur invitation direct')),
+        ('L', _('Verrouillé'))
+    ), default='P', verbose_name=_('mode de vente'))
 
     def full_name(self):
         return '{} - {}€'.format(self.name, self.price_ttc)
@@ -183,6 +188,12 @@ class Option(Pricing):
 
 def generate_token():
     return get_random_string(32)
+
+
+class InvitationGrant(models.Model):
+    invitation = models.ForeignKey('Invitation', on_delete=models.CASCADE, related_name=_('grants'))
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name=_('produit'))
+    amount = models.IntegerField(verbose_name=_('quantité'))
 
 
 class Invitation(models.Model):
@@ -247,7 +258,7 @@ class Billet(models.Model):
     def validated():
         return Billet.objects.filter(
             order__status__lt=Order.STATUS_VALIDATED, order__created_at__gte=timezone.now() - timedelta(minutes=20)
-        ) | Billet.objects.filter(order__status=Order.STATUS_VALIDATED)
+        ) | Billet.objects.filter(order__status=Order.STATUS_VALIDATED, canceled=False)
 
     def __str__(self):
         return str("Billet n°" + str(self.id))
@@ -489,9 +500,20 @@ class Order(models.Model):
 
     def is_valid(self):
         rules = self.sold_products_rules
+        if self.billets.filter(product__selling_mode='L').count() > 0:
+            return False
         for rule in list(rules):
             if not rule.validate(self):
                 return False
+        if self.billets.filter(product__selling_mode='I').count() > 0:
+            counts = {}
+            for billet in self.billets.filter(product__selling_mode='I'):
+                amount_allowed = InvitationGrant.objects.filter(invitation__in=self.client.invitations.all())\
+                    .aggregate(total=Sum('amount'))['total']
+                if 1 + counts.get(billet.product_id, 0) <= amount_allowed:
+                    counts[billet.product_id] = counts.get(billet.product_id, 0) + 1
+                else:
+                    return False
         return True
 
     @property
