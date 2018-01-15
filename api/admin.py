@@ -14,6 +14,7 @@ from . import models
                 models.PricingRule,
                 models.Product, models.Option,
                 models.Coupon,
+                models.InvitationGrant,
                 models.PaymentMethod,
                 models.Question,
                 models.Categorie,
@@ -91,9 +92,16 @@ class BilletAdmin(admin.ModelAdmin):
         return ' # '.join(p)
 
 
+class InvitationGrantInline(admin.StackedInline):
+    model = models.InvitationGrant
+    extra = 3
+
+
 @admin.register(models.Invitation)
 class InvitationAdmin(admin.ModelAdmin):
     search_fields = ['first_name', 'last_name', 'email']
+    raw_id_fields = ('client',)
+    inlines = (InvitationGrantInline,)
     list_per_page = 20
 
 

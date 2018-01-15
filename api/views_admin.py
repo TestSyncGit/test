@@ -65,7 +65,7 @@ class BilletsViewSet(viewsets.ReadOnlyModelViewSet):
             order__event__membership__user=self.request.user)
         if 'status' in self.request.GET:
             status = self.request.GET.get('status', '')
-            base = base.filter(order__in=Order.accountable_orders())
+            base = base.filter(order__in=Order.accountable_orders(), canceled=False)
             if status == 'accountable':
                 pass
             elif status == 'validated':

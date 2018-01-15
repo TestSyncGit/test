@@ -71,7 +71,7 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Product
         fields = ('id', 'name',
-                  'price_ht', 'price_ttc',
+                  'price_ht', 'price_ttc', 'selling_mode',
                   'rules', 'options', 'seats', 'description',
                   'questions', 'event', 'how_many_left', 'categorie')
 
@@ -101,13 +101,20 @@ class ClientSerializer(serializers.ModelSerializer):
         fields = ('id', 'first_name', 'last_name', 'email', 'phone')
 
 
+class InvitationGrantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.InvitationGrant
+        fields = ('product_id', 'amount')
+
+
 class InvitationSerializer(serializers.ModelSerializer):
     event = EventSerializer(read_only=True)
     client = ClientSerializer(read_only=True)
+    grants = InvitationGrantSerializer(read_only=True, many=True)
 
     class Meta:
         model = models.Invitation
-        fields = ('id', 'client', 'event', 'token', 'bought_seats', 'seats')
+        fields = ('id', 'client', 'event', 'token', 'bought_seats', 'seats', 'grants')
         depth = 3
 
 
