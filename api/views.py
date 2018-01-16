@@ -19,6 +19,7 @@ from api import permissions
 from api.models import Event, Order, Option, Product, Billet, Categorie, Invitation, Client, BilletOption, Coupon
 from api.serializers.public import BilletSerializer, CategorieSerializer, InvitationSerializer, ParticipantSerializer, \
     AnswerSerializer, BilletOptionSerializer, BilletOptionInputSerializer, UserSerializer
+from api.tasks import clean_old_orders
 from mercanet.models import TransactionRequest
 from api.serializers.public import EventSerializer, OrderSerializer, OptionSerializer, \
     ProductSerializer
@@ -54,6 +55,8 @@ class EventsViewSet(viewsets.ModelViewSet):
 
          Il faut envoyer un dictionaire dont la valeur "billets" correspondt à un tableau contenat les billest
         """
+
+        clean_old_orders.delay()
 
         # On récupère l'évenement en s'assurant au passage que l'utilisateur a le droit  d'y accéder
         event = Event.for_user(request.user).get(id=pk)
