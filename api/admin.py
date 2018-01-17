@@ -81,7 +81,7 @@ class BilletAdmin(admin.ModelAdmin):
     list_display = ['id', 'order', 'participants', 'mercanet', 'product']
     search_fields = ['participants__first_name', 'participants__last_name', 'participants__email']
     raw_id_fields = ('order', 'product')
-    list_filter = ['canceled', 'order__event__name', 'order__status', 'product__name']
+    list_filter = ['canceled', 'refunded', 'order__event__name', 'order__status', 'product__name']
     inlines = (BilletOptionInline, ParticipantInline)
     list_per_page = 20
 
