@@ -265,6 +265,12 @@ class Billet(models.Model):
         return str("Billet n°" + str(self.id))
 
 
+@receiver(pre_save, sender=Billet)
+def before_save_billet_check_refund_status(sender, instance, raw, **kwargs):
+    if instance.refunded and not instance.canceled:
+        instance.canceled = True
+
+
 class PricingRule(models.Model):
     class Meta:
         verbose_name = _('Règles de poduits (Jauges/Limite)')
