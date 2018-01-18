@@ -92,7 +92,7 @@ class BilletAdmin(admin.ModelAdmin):
         return ' # '.join(p)
 
     def mercanet(self, billet):
-        if billet.order.transaction:
+        if billet.order.transaction and billet.order.transaction.mercanet:
             return billet.order.transaction.mercanet.transactionReference
         else:
             return ''
@@ -176,7 +176,7 @@ class OrderAdmin(admin.ModelAdmin):
         return order.billets.all()
 
     def mercanet(self, order):
-        if order.transaction:
+        if order.transaction and order.transaction.mercanet:
             return order.transaction.mercanet.transactionReference
         else:
             return ''
