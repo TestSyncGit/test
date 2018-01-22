@@ -582,6 +582,10 @@ def update_order_on_card_transaction(instance, **kwargs):
         if request_status == TransactionRequest.STATUSES['PAYED']:
             order.status = Order.STATUS_VALIDATED
             order.send_tickets()
+            grants = InvitationGrant.objects.filter(invitation__client=order.client, product__in=order.products)
+            for grant in grants:
+                grant.amount -= order.billets.filter(product=grant.product).count()
+                grant.save()
         elif request_status == TransactionRequest.STATUSES['REJECTED']:
             order.status = Order.STATUS_REJECTED
         order.save()
