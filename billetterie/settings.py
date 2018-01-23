@@ -193,3 +193,4 @@ BILLEVENT = {
 }
 
 CELERY_RESULT_BACKEND = 'django-db'
+CELERY_BROKER_URL = os.environ.get('BROKER_URL', 'amqp://guest:guest@localhost:5672/')
