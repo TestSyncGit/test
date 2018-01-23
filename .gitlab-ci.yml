@@ -37,9 +37,9 @@ deploy:
   stage: deploy
   image: cdrx/rancher-gitlab-deploy
   script:
-    - upgrade --new-image "$CI_REGISTRY_IMAGE" --start-before-stopping --stack billevent --service backend-api
-    - upgrade --new-image "$CI_REGISTRY_IMAGE" --start-before-stopping --stack billevent --service backend-scheduler
-    - upgrade --new-image "$CI_REGISTRY_IMAGE" --start-before-stopping --stack billevent --service backend-worker
+    - upgrade --new-image "$CI_REGISTRY_IMAGE" --start-before-stopping --stack billevent --service billevent-backend-api
+    - upgrade --new-image "$CI_REGISTRY_IMAGE" --start-before-stopping --stack billevent --service billevent-backend-scheduler
+    - upgrade --new-image "$CI_REGISTRY_IMAGE" --start-before-stopping --stack billevent --service billevent-backend-worker
   only:
     - master
   when: manual
