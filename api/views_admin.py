@@ -1,14 +1,18 @@
 # This file contains routes only allowed for a membership user
 # Permission must be ensure by link between an organization and a user
 # User and Organization is a One to Many relationship. A user can have only one organization.
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncDay
+from rest_framework.pagination import PageNumberPagination
+
+from .utils.serializers import CustomSerializerViewSet
 from rest_framework import viewsets
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.response import Response
 
-from api import serializers_admin as serializers, permissions
-from api.models import Event, Organizer, Invitation, Billet, Order, Product
+from api import permissions
+from api.serializers import admin as serializers
+from api.models import Event, Organizer, Invitation, Billet, Order, Product, Question, Answer
 
 
 class EventViewSet(viewsets.ModelViewSet):
@@ -61,7 +65,7 @@ class BilletsViewSet(viewsets.ReadOnlyModelViewSet):
             order__event__membership__user=self.request.user)
         if 'status' in self.request.GET:
             status = self.request.GET.get('status', '')
-            base = base.filter(order__in=Order.accountable_orders())
+            base = base.filter(order__in=Order.accountable_orders(), canceled=False)
             if status == 'accountable':
                 pass
             elif status == 'validated':
@@ -122,28 +126,43 @@ class BilletsViewSet(viewsets.ReadOnlyModelViewSet):
         })
 
 
-class OrdersViewSet(viewsets.ReadOnlyModelViewSet):
+class OrdersSetPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+class OrdersViewSet(CustomSerializerViewSet, viewsets.ModelViewSet):
     serializer_class = serializers.OrderSerializer
+    custom_serializer_classes = {
+        'list': serializers.OrdersListSerializer
+    }
+    pagination_class = OrdersSetPagination
     permission_classes = [permissions.IsEventManager]
 
     def get_queryset(self):
         base = Order.objects.filter(
-            event__organizer__membership__user=self.request.user) | Billet.objects.filter(
+            event__organizer__membership__user=self.request.user) | Order.objects.filter(
             event__membership__user=self.request.user)
         if 'status' in self.request.GET:
             status = self.request.GET.get('status', '')
-            base = base.filter(id__in=Order.accountable_orders())
             if status == 'accountable':
-                pass
+                base = base.filter(id__in=Order.accountable_orders())
             elif status == 'validated':
-                base = base.filter(id_in=Order.objects.filter(status=Order.STATUS_VALIDATED))
-        if 'event' in self.request.GET:
-            event = self.request.GET.get('event', '')
-            event = self.allowed_events().get(id=event)
-            base = base.filter(event=event)
-        if 'products' in self.request.GET:
-            products = self.products_for_order()
-            base = base.filter(billets__product__in=products)
+                base = base.filter(status=Order.STATUS_VALIDATED)
+            elif status == 'any':
+                base = base
+        else:
+            if self.action == 'list':
+                base = base.filter(status=Order.STATUS_VALIDATED)
+        if 'search' in self.request.GET:
+            search = self.request.GET.get('search', '').split(' ')
+            for word in search:
+                base = base.filter(Q(client__first_name__icontains=word) |
+                                   Q(client__last_name__icontains=word) |
+                                   Q(client__email__icontains=word) |
+                                   Q(transaction__mercanet__transactionReference=word))
+        base = base.order_by('created_at').reverse()
         return base
 
     def products_for_order(self):
@@ -153,3 +172,50 @@ class OrdersViewSet(viewsets.ReadOnlyModelViewSet):
     def allowed_events(self):
         return (Event.objects.filter(organizer__membership__user=self.request.user) |
                 Event.objects.filter(membership__user=self.request.user))
+
+
+class QuestionsViewSet(CustomSerializerViewSet, viewsets.ModelViewSet):
+    serializer_class = serializers.QuestionSerializer
+    custom_serializer_classes = {
+        'list': serializers.QuestionSerializer
+    }
+    pagination_class = OrdersSetPagination
+    permission_classes = [permissions.IsEventManager]
+
+    def get_queryset(self):
+        base = Question.objects.filter(id__in=Question.objects.filter(
+            Q(option__event__organizer__membership__user=self.request.user) |
+            Q(product__event__organizer__membership__user=self.request.user) |
+            Q(option__event__membership__user=self.request.user) |
+            Q(product__event__membership__user=self.request.user)))
+        return base
+
+
+class AnswersViewSet(CustomSerializerViewSet, viewsets.ModelViewSet):
+    serializer_class = serializers.AnswerSerializer
+    custom_serializer_classes = {
+        'list': serializers.AnswerSerializer
+    }
+    permission_classes = [permissions.IsEventManager]
+
+    def get_queryset(self):
+        base = Answer.objects.filter(question__in=Question.objects.filter(
+            Q(option__event__organizer__membership__user=self.request.user) |
+            Q(product__event__organizer__membership__user=self.request.user) |
+            Q(option__event__membership__user=self.request.user) |
+            Q(product__event__membership__user=self.request.user)))
+        if 'question' in self.request.GET:
+            question = self.request.GET.get('question', '')
+            base = base.filter(question=question)
+        if 'status' in self.request.GET:
+            status = self.request.GET.get('status', '')
+            if status == 'accountable':
+                base = base.filter(order__in=Order.accountable_orders())
+            elif status == 'validated':
+                base = base.filter(order__status=Order.STATUS_VALIDATED)
+            elif status == 'any':
+                base = base
+        else:
+            if self.action == 'list':
+                base = base.filter(order__status=Order.STATUS_VALIDATED)
+        return base

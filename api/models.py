@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.translation import ugettext_lazy as _
 
-from api.email import InvitationEmail
+from api.email import InvitationEmail, TicketsEmail
 from mercanet.models import TransactionRequest, TransactionMercanet
 
 TARGETS = (
@@ -123,6 +123,11 @@ class Pricing(models.Model):
     questions = models.ManyToManyField("Question", blank=True)
     event = models.ForeignKey(Event, verbose_name=_('Evènement'))
     description = models.TextField(verbose_name=_('Description'), blank=True, null=True)
+    selling_mode = models.CharField(max_length=1, choices=(
+        ('P', _('Public (en fonction de l\'évènement)')),
+        ('I', _('Sur invitation direct')),
+        ('L', _('Verrouillé'))
+    ), default='P', verbose_name=_('mode de vente'))
 
     def full_name(self):
         return '{} - {}€'.format(self.name, self.price_ttc)
@@ -185,6 +190,12 @@ def generate_token():
     return get_random_string(32)
 
 
+class InvitationGrant(models.Model):
+    invitation = models.ForeignKey('Invitation', on_delete=models.CASCADE, related_name=_('grants'))
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name=_('produit'))
+    amount = models.IntegerField(verbose_name=_('quantité'))
+
+
 class Invitation(models.Model):
     seats = models.IntegerField(default=1)
     email = models.EmailField()
@@ -241,15 +252,23 @@ class Billet(models.Model):
     product = models.ForeignKey(Product, null=True, blank=True, related_name='billets')
     options = models.ManyToManyField(Option, through=BilletOption, related_name='billets')
     order = models.ForeignKey('Order', null=True, related_name='billets')
+    canceled = models.BooleanField(default=False)
+    refunded = models.BooleanField(default=False)
 
     @staticmethod
     def validated():
         return Billet.objects.filter(
             order__status__lt=Order.STATUS_VALIDATED, order__created_at__gte=timezone.now() - timedelta(minutes=20)
-        ) | Billet.objects.filter(order__status=Order.STATUS_VALIDATED)
+        ) | Billet.objects.filter(order__status=Order.STATUS_VALIDATED, canceled=False)
 
     def __str__(self):
         return str("Billet n°" + str(self.id))
+
+
+@receiver(pre_save, sender=Billet)
+def before_save_billet_check_refund_status(sender, instance, raw, **kwargs):
+    if instance.refunded and not instance.canceled:
+        instance.canceled = True
 
 
 class PricingRule(models.Model):
@@ -360,7 +379,7 @@ class Question(models.Model):
 
 class Answer(models.Model):
     order = models.ForeignKey('Order', related_name='answers')
-    question = models.ForeignKey(Question)
+    question = models.ForeignKey(Question, related_name='answers')
     participant = models.ForeignKey(Participant, null=True, blank=True)
     billet = models.ForeignKey(Billet, null=True, blank=True)
     value = models.TextField(blank=True, null=True)
@@ -401,6 +420,12 @@ class Client(models.Model):
         name += self.last_name + " "
         name += self.first_name + " ("
         name += self.email + ")"
+        return name
+
+    @property
+    def name(self):
+        name = self.last_name + " "
+        name += self.first_name
         return name
 
 
@@ -482,9 +507,20 @@ class Order(models.Model):
 
     def is_valid(self):
         rules = self.sold_products_rules
+        if self.billets.filter(product__selling_mode='L').count() > 0:
+            return False
         for rule in list(rules):
             if not rule.validate(self):
                 return False
+        if self.billets.filter(product__selling_mode='I').count() > 0:
+            counts = {}
+            for billet in self.billets.filter(product__selling_mode='I'):
+                amount_allowed = InvitationGrant.objects.filter(invitation__in=self.client.invitations.all())\
+                    .aggregate(total=Sum('amount'))['total']
+                if 1 + counts.get(billet.product_id, 0) <= amount_allowed:
+                    counts[billet.product_id] = counts.get(billet.product_id, 0) + 1
+                else:
+                    return False
         return True
 
     @property
@@ -533,6 +569,10 @@ class Order(models.Model):
     def __str__(self):
         return "Commande #" + str(self.event.id) + "-" + str(self.id)
 
+    def send_tickets(self):
+        email = TicketsEmail(self, to=(self.client.email,))
+        email.send(True)
+
 
 @receiver(post_save, sender=TransactionMercanet)
 def update_order_on_card_transaction(instance, **kwargs):
@@ -541,6 +581,11 @@ def update_order_on_card_transaction(instance, **kwargs):
         request_status = instance.request.status
         if request_status == TransactionRequest.STATUSES['PAYED']:
             order.status = Order.STATUS_VALIDATED
+            order.send_tickets()
+            grants = InvitationGrant.objects.filter(invitation__client=order.client, product__in=order.products)
+            for grant in grants:
+                grant.amount -= order.billets.filter(product=grant.product).count()
+                grant.save()
         elif request_status == TransactionRequest.STATUSES['REJECTED']:
             order.status = Order.STATUS_REJECTED
         order.save()

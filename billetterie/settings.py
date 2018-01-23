@@ -32,6 +32,8 @@ CORS_ORIGIN_WHITELIST = [
     'billetterie.bde-insa-lyon.fr',
     'localhost:4200',
     '127.0.0.1:4200',
+    'localhost:4201',
+    '127.0.0.1:4201',
     '127.0.0.1:8000',
     'localhost:8000'
 ] + os.environ.get('DOMAINS', '').split(',')
@@ -42,6 +44,8 @@ CSRF_TRUSTED_ORIGINS = [
     'billetterie.bde-insa-lyon.fr',
     'localhost:4200',
     '127.0.0.1:4200',
+    'localhost:4201',
+    '127.0.0.1:4201',
 ] + os.environ.get('DOMAINS', '').split(',')
 
 # Application definition
@@ -173,6 +177,7 @@ STATICFILES_DIRS = [
 
 BILLEVENT = {
     'FRONTEND_URL': os.environ.get('FRONTEND_URL', 'http://localhost:4200'),
+    'API_URL': os.environ.get('API_URL', 'http://localhost:8000'),
     'MERCANET': {
         'INTERFACE_VERSION': os.environ.get('MERCANET_INTERFACE_VERSION', 'IR_WS_2.18'),
         'KEY_VERSION': os.environ.get('MERCANET_KEY_VERSION', '1'),
