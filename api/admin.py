@@ -81,7 +81,7 @@ class BilletAdmin(admin.ModelAdmin):
     list_display = ['id', 'order', 'participants', 'mercanet', 'product']
     search_fields = ['participants__first_name', 'participants__last_name', 'participants__email']
     raw_id_fields = ('order', 'product')
-    list_filter = ['canceled', 'order__event__name', 'order__status', 'product__name']
+    list_filter = ['canceled', 'refunded', 'order__event__name', 'order__status', 'product__name']
     inlines = (BilletOptionInline, ParticipantInline)
     list_per_page = 20
 
@@ -92,7 +92,7 @@ class BilletAdmin(admin.ModelAdmin):
         return ' # '.join(p)
 
     def mercanet(self, billet):
-        if billet.order.transaction:
+        if billet.order.transaction and billet.order.transaction.mercanet:
             return billet.order.transaction.mercanet.transactionReference
         else:
             return ''
@@ -176,7 +176,7 @@ class OrderAdmin(admin.ModelAdmin):
         return order.billets.all()
 
     def mercanet(self, order):
-        if order.transaction:
+        if order.transaction and order.transaction.mercanet:
             return order.transaction.mercanet.transactionReference
         else:
             return ''

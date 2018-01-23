@@ -253,6 +253,7 @@ class Billet(models.Model):
     options = models.ManyToManyField(Option, through=BilletOption, related_name='billets')
     order = models.ForeignKey('Order', null=True, related_name='billets')
     canceled = models.BooleanField(default=False)
+    refunded = models.BooleanField(default=False)
 
     @staticmethod
     def validated():
@@ -262,6 +263,12 @@ class Billet(models.Model):
 
     def __str__(self):
         return str("Billet n°" + str(self.id))
+
+
+@receiver(pre_save, sender=Billet)
+def before_save_billet_check_refund_status(sender, instance, raw, **kwargs):
+    if instance.refunded and not instance.canceled:
+        instance.canceled = True
 
 
 class PricingRule(models.Model):
@@ -575,6 +582,10 @@ def update_order_on_card_transaction(instance, **kwargs):
         if request_status == TransactionRequest.STATUSES['PAYED']:
             order.status = Order.STATUS_VALIDATED
             order.send_tickets()
+            grants = InvitationGrant.objects.filter(invitation__client=order.client, product__in=order.products)
+            for grant in grants:
+                grant.amount -= order.billets.filter(product=grant.product).count()
+                grant.save()
         elif request_status == TransactionRequest.STATUSES['REJECTED']:
             order.status = Order.STATUS_REJECTED
         order.save()
