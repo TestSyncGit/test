@@ -7,8 +7,8 @@ build-master:
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
-    - docker build --pull -t "$CI_REGISTRY_IMAGE" .
-    - docker push "$CI_REGISTRY_IMAGE"
+    - docker build --pull -t "$CI_REGISTRY_IMAGE:latest" .
+    - docker push "$CI_REGISTRY_IMAGE:latest"
   only:
     - master
 
@@ -19,14 +19,27 @@ build:
   script:
     - docker build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-  except:
-    - master
+  only:
+    - dev
+    - hotfix_*
+
+deploy-test:
+  stage: deploy
+  image: cdrx/rancher-gitlab-deploy
+  script:
+    - upgrade --new-image "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" --stack billevent-preprod --service billevent-preprod-backend-api
+    - upgrade --new-image "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" --stack billevent-preprod --service billevent-preprod-backend-scheduler
+    - upgrade --new-image "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" --stack billevent-preprod --service billevent-preprod-backend-worker
+  only:
+    - dev
 
 deploy:
   stage: deploy
   image: cdrx/rancher-gitlab-deploy
   script:
     - upgrade --new-image "$CI_REGISTRY_IMAGE" --start-before-stopping --stack billevent --service backend-api
+    - upgrade --new-image "$CI_REGISTRY_IMAGE" --start-before-stopping --stack billevent --service backend-tasks-scheduler
+    - upgrade --new-image "$CI_REGISTRY_IMAGE" --start-before-stopping --stack billevent --service backend-tasks-worker
   only:
     - master
-
+  when: manual
