@@ -38,8 +38,8 @@ deploy:
   image: cdrx/rancher-gitlab-deploy
   script:
     - upgrade --new-image "$CI_REGISTRY_IMAGE" --start-before-stopping --stack billevent --service backend-api
-    - upgrade --new-image "$CI_REGISTRY_IMAGE" --start-before-stopping --stack billevent --service backend-tasks-scheduler
-    - upgrade --new-image "$CI_REGISTRY_IMAGE" --start-before-stopping --stack billevent --service backend-tasks-worker
+    - upgrade --new-image "$CI_REGISTRY_IMAGE" --start-before-stopping --stack billevent --service backend-scheduler
+    - upgrade --new-image "$CI_REGISTRY_IMAGE" --start-before-stopping --stack billevent --service backend-worker
   only:
     - master
   when: manual
