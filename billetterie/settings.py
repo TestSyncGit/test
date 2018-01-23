@@ -29,24 +29,24 @@ DEBUG = os.environ.get('ENV', 'development') != 'production'
 ALLOWED_HOSTS = os.environ.get('HOST', 'localhost').split(',')
 
 CORS_ORIGIN_WHITELIST = [
-    'billetterie.bde-insa-lyon.fr',
-    'localhost:4200',
-    '127.0.0.1:4200',
-    'localhost:4201',
-    '127.0.0.1:4201',
-    '127.0.0.1:8000',
-    'localhost:8000'
-] + os.environ.get('DOMAINS', '').split(',')
+                            'billetterie.bde-insa-lyon.fr',
+                            'localhost:4200',
+                            '127.0.0.1:4200',
+                            'localhost:4201',
+                            '127.0.0.1:4201',
+                            '127.0.0.1:8000',
+                            'localhost:8000'
+                        ] + os.environ.get('DOMAINS', '').split(',')
 
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
-    'billetterie.bde-insa-lyon.fr',
-    'localhost:4200',
-    '127.0.0.1:4200',
-    'localhost:4201',
-    '127.0.0.1:4201',
-] + os.environ.get('DOMAINS', '').split(',')
+                           'billetterie.bde-insa-lyon.fr',
+                           'localhost:4200',
+                           '127.0.0.1:4200',
+                           'localhost:4201',
+                           '127.0.0.1:4201',
+                       ] + os.environ.get('DOMAINS', '').split(',')
 
 # Application definition
 
@@ -57,6 +57,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_results',
+    'django_celery_beat',
     "anymail",
     'rest_framework',
     'rest_framework_swagger',
@@ -119,7 +121,7 @@ JWT_AUTH = {
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.config(default='sqlite:///'+os.path.join(BASE_DIR, 'db.sqlite3'), conn_max_age=600)
+    'default': dj_database_url.config(default='sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3'), conn_max_age=600)
 }
 
 ANYMAIL = {
@@ -182,8 +184,12 @@ BILLEVENT = {
         'INTERFACE_VERSION': os.environ.get('MERCANET_INTERFACE_VERSION', 'IR_WS_2.18'),
         'KEY_VERSION': os.environ.get('MERCANET_KEY_VERSION', '1'),
         'MERCHANT_ID': os.environ.get('MERCANET_MERCHANT_ID', '211000021310001'),
-        'URL': os.environ.get('MERCANET_URL', 'https://payment-webinit-mercanet.test.sips-atos.com/rs-services/v2/paymentInit'),
+        'URL': os.environ.get('MERCANET_URL',
+                              'https://payment-webinit-mercanet.test.sips-atos.com/rs-services/v2/paymentInit'),
         'SECRET_KEY': os.environ.get('MERCANET_SECRET_KEY', 'S9i8qClCnb2CZU3y3Vn0toIOgz3z_aBi79akR30vM9o'),
-        'REPONSE_AUTO_URL': os.environ.get('MERCANET_REPONSE_AUTO_URL', 'http://mercanet.pvienne.ultrahook.com/pay/auto/'),
+        'REPONSE_AUTO_URL': os.environ.get('MERCANET_REPONSE_AUTO_URL',
+                                           'http://mercanet.pvienne.ultrahook.com/pay/auto/'),
     }
 }
+
+CELERY_RESULT_BACKEND = 'django-db'
