@@ -27,8 +27,8 @@ deploy-test:
   image: cdrx/rancher-gitlab-deploy
   script:
     - upgrade --new-image "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" --stack billevent-preprod --service billevent-preprod-backend-api
-    - upgrade --new-image "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" --stack billevent-preprod --service billevent-preprod-backend-tasks-scheduler
-    - upgrade --new-image "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" --stack billevent-preprod --service billevent-preprod-backend-tasks-worker
+    - upgrade --new-image "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" --stack billevent-preprod --service billevent-preprod-backend-scheduler
+    - upgrade --new-image "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" --stack billevent-preprod --service billevent-preprod-backend-worker
   only:
     - dev
 
