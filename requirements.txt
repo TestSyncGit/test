@@ -24,7 +24,7 @@ Faker==0.8.6
 gunicorn==19.7.1
 idna==2.6
 itypes==1.1.0
-Jinja2==2.10
+Jinja2==2.11.3
 kombu==4.1.0
 MarkupSafe==1.0
 olefile==0.44
